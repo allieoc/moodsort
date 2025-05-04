@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import BlobPiece from './BlobPiece';
 
-export default function DraggableBlob({ color, onDrop }) {
+export default function DraggableBlob({ color, onDrop, id }) {
   // Move these inside the component so each blob gets its own
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -25,7 +25,7 @@ export default function DraggableBlob({ color, onDrop }) {
       translateY.value = ctx.startY + event.translationY;
     },
     onEnd: (event) => {
-      runOnJS(onDrop)(event.absoluteX, event.absoluteY, color);
+      runOnJS(onDrop)(event.absoluteX, event.absoluteY, color, id);
       translateX.value = withSpring(0);
       translateY.value = withSpring(0);
     },

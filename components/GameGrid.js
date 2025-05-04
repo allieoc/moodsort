@@ -2,41 +2,39 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, findNodeHandle, UIManager } from 'react-native';
 import BlobPiece from './BlobPiece';
 
-const GRID_SIZE = 4;
+export default function GameGrid({ grid, onRegisterCells }) {
+  const cellRefs = useRef([]);
 
-export default function GameGrid({ grid, setGrid, onRegisterCells }) {
-    const cellRefs = useRef(
-      Array(GRID_SIZE)
-        .fill(null)
-        .map(() => Array(GRID_SIZE).fill(null).map(() => React.createRef()))
+  // Generate refs ONCE on first mount
+  if (cellRefs.current.length !== grid.length || cellRefs.current[0]?.length !== grid[0].length) {
+    cellRefs.current = grid.map((row, rowIndex) =>
+      row.map((_, colIndex) => cellRefs.current[rowIndex]?.[colIndex] || React.createRef())
     );
+  }
+
   useEffect(() => {
     const cellLayouts = [];
+    let remaining = grid.length * grid[0].length;
 
-    let remaining = GRID_SIZE * GRID_SIZE;
-
-    for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        const handle = findNodeHandle(cellRefs.current[row][col].current);
+    for (let row = 0; row < grid.length; row++) {
+      for (let col = 0; col < grid[row].length; col++) {
+        const ref = cellRefs.current[row][col];
+        const handle = ref?.current && findNodeHandle(ref.current);
         if (handle) {
           UIManager.measure(handle, (x, y, width, height, pageX, pageY) => {
-            cellLayouts.push({
-              row,
-              col,
-              x: pageX,
-              y: pageY,
-              width,
-              height,
-            });
+            cellLayouts.push({ row, col, x: pageX, y: pageY, width, height });
             remaining--;
             if (remaining === 0) {
+              console.log('🧱 Cell Layouts:', cellLayouts);
               onRegisterCells(cellLayouts);
             }
           });
+        } else {
+          remaining--; // fallback decrement to avoid hang
         }
       }
     }
-  }, []);
+  }, [grid]);
 
   return (
     <View style={styles.grid}>

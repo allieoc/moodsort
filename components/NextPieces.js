@@ -5,9 +5,9 @@ import DraggableBlob from './DraggableBlob';
 export default function NextPieces({ pieces = [], onDrop }) {
   return (
     <View style={styles.container}>
-          {pieces.map((color, index) => (
-            <View key={`${color}-${index}`} style={styles.pieceWrapper}>
-              <DraggableBlob color={color} onDrop={onDrop} id={`${color}-${index}`} />
+          {pieces.map((piece) => (
+            <View key={piece.id} style={styles.pieceWrapper}>
+              <DraggableBlob color={piece.color} id={piece.id} onDrop={onDrop} />
             </View>
           ))}
     </View>
