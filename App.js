@@ -21,7 +21,7 @@ export default function App() {
   const cellLayoutsRef = useRef([]);
 
   const handleRegisterCells = (layouts) => {
-    console.log('🧱 Cell layouts:', layouts);
+
     cellLayoutsRef.current = layouts;
   };
 
@@ -56,7 +56,7 @@ export default function App() {
     }
 
     if (toClear.length > 0) {
-      console.log('💥 Clearing cells:', toClear);
+   
       setMeltingCells(toClear);
       setTimeout(() => {
         const afterClearGrid = newGrid.map((row, r) =>
@@ -106,7 +106,6 @@ export default function App() {
     });
 
     if (!canPlace) {
-      console.log('🚫 Cannot place shape: space occupied or out of bounds');
       return;
     }
 
@@ -142,7 +141,9 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <GameGrid grid={grid} onRegisterCells={handleRegisterCells} meltingCells={meltingCells} />
+          <View style={{ marginBottom: 24 }}>
+            <GameGrid grid={grid} onRegisterCells={handleRegisterCells} meltingCells={meltingCells} />
+          </View>
         <NextPieces pieces={nextPieces} onDrop={handleDrop} />
         {gameOver && (
           <Text style={{ color: 'white', fontSize: 24, marginTop: 20 }}>
@@ -155,11 +156,13 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1b1f3b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 40,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: '#1b1f3b',
+      alignItems: 'center',
+      justifyContent: 'center', // was center
+      paddingTop: 48, // gives space above the grid
+      paddingBottom: 40,
+      paddingHorizontal: 16, // adds side margin!
+    },
 });

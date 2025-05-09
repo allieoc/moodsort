@@ -30,11 +30,12 @@ export default function NextPieces({ pieces = [], onDrop }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginVertical: 16,
+      paddingHorizontal: 16, // ✅ add this
+    },
 });
 
 // Helper to generate a random blob piece

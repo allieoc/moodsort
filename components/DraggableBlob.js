@@ -15,6 +15,11 @@ export default function DraggableBlob({ id, color, shape, type, onDrop }) {
   const translateY = useSharedValue(0);
   const isDragging = useSharedValue(false);
 
+  const shapeMaxX = Math.max(...shape.map(p => p.x));
+  const shapeMaxY = Math.max(...shape.map(p => p.y));
+  const pieceWidth = shapeMaxX * 52 + 50;
+  const pieceHeight = shapeMaxY * 52 + 50;
+
   const gestureHandler = useAnimatedGestureHandler({
     onStart: (_, ctx) => {
       ctx.startX = translateX.value;
@@ -26,9 +31,20 @@ export default function DraggableBlob({ id, color, shape, type, onDrop }) {
       translateY.value = ctx.startY + event.translationY;
     },
     onEnd: (event) => {
-      runOnJS(onDrop)(event.absoluteX, event.absoluteY, color, id);
-      translateX.value = withSpring(0);
-      translateY.value = withSpring(0);
+        // Compute visual center of the shape
+        const avgX = shape.reduce((sum, p) => sum + p.x, 0) / shape.length;
+        const avgY = shape.reduce((sum, p) => sum + p.y, 0) / shape.length;
+        // Convert shape center to pixel offset (approximate)
+        const offsetX = avgX * 52;
+        const offsetY = avgY * 52;
+
+        // Final drop center
+        const centerX = event.absoluteX - offsetX;
+        const centerY = event.absoluteY - offsetY;
+
+        runOnJS(onDrop)(centerX, centerY, color, id);
+      translateX.value = withSpring(0, { damping: 14, stiffness: 200 });
+      translateY.value = withSpring(0, { damping: 14, stiffness: 200 });
       isDragging.value = false;
     },
   });
@@ -63,11 +79,13 @@ export default function DraggableBlob({ id, color, shape, type, onDrop }) {
   );
 }
 
+
 const styles = StyleSheet.create({
   blobContainer: {
     width: 120,
     height: 120,
-    marginHorizontal: 8,
+
+    paddingHorizontal: 8,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',

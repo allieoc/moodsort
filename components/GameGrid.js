@@ -68,23 +68,25 @@ export default function GameGrid({ grid, onRegisterCells, meltingCells = [] }) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    padding: 10,
-    backgroundColor: '#2a2f4f',
-    borderRadius: 20,
-  },
+    grid: {
+      padding: 10,
+      paddingHorizontal: 16, // ✅ add this for left/right spacing inside the grid
+      backgroundColor: '#2a2f4f',
+      borderRadius: 20,
+      alignSelf: 'center',
+    },
   row: {
     flexDirection: 'row',
   },
-  cell: {
-    width: 60,
-    height: 60,
-    margin: 4,
-    backgroundColor: '#3a3f6c',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#525885',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    cell: {
+      width: 56, // slightly reduced from 60
+      height: 56,
+      margin: 4,
+      backgroundColor: '#3a3f6c',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#525885',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 });
