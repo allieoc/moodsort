@@ -1,9 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, findNodeHandle, UIManager } from 'react-native';
 import BlobPiece from './BlobPiece';
 
-export default function GameGrid({ grid, onRegisterCells }) {
+export default function GameGrid({ grid, onRegisterCells, meltingCells = [] }) {
   const cellRefs = useRef([]);
+
+  if (!grid || !Array.isArray(grid) || !grid[0]) {
+    console.warn('⛔️ GameGrid: grid prop invalid:', grid);
+    return null;
+  }
 
   // Generate refs ONCE on first mount
   if (cellRefs.current.length !== grid.length || cellRefs.current[0]?.length !== grid[0].length) {
@@ -30,25 +35,32 @@ export default function GameGrid({ grid, onRegisterCells }) {
             }
           });
         } else {
-          remaining--; // fallback decrement to avoid hang
+          remaining--;
         }
       }
     }
+  }, [grid]);
+
+  useEffect(() => {
+    console.log('🧊 Grid rendering:', grid);
   }, [grid]);
 
   return (
     <View style={styles.grid}>
       {grid.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
-          {row.map((cell, colIndex) => (
-            <View
-              key={colIndex}
-              ref={cellRefs.current[rowIndex][colIndex]}
-              style={styles.cell}
-            >
-              {cell && <BlobPiece color={cell} variant="grid" />}
-            </View>
-          ))}
+          {row.map((cell, colIndex) => {
+            const isMelting = meltingCells.some(pos => pos.row === rowIndex && pos.col === colIndex);
+            return (
+              <View
+                key={`${rowIndex}-${colIndex}-${cell}`}
+                ref={cellRefs.current[rowIndex][colIndex]}
+                style={styles.cell}
+              >
+                    {cell && <BlobPiece color={cell} variant="grid" melting={isMelting} />}
+              </View>
+            );
+          })}
         </View>
       ))}
     </View>
@@ -72,7 +84,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#525885',
-    alignItems: 'stretch',
+    alignItems: 'center',
     justifyContent: 'center',
   },
 });

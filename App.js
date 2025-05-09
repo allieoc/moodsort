@@ -2,9 +2,7 @@ import React, { useState, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View, Text } from 'react-native';
 import GameGrid from './components/GameGrid';
-import NextPieces from './components/NextPieces';
-import { generateRandomPiece } from './components/NextPieces';
-
+import NextPieces, { generateRandomPiece } from './components/NextPieces';
 
 const COLORS = ['blue', 'pink', 'green', 'yellow', 'purple'];
 let blobCounter = 0;
@@ -14,11 +12,12 @@ const generateNextPieces = () => {
 };
 
 export default function App() {
-    const [grid, setGrid] = useState(
-      Array(6).fill(null).map(() => Array(6).fill(null))
-    );
+  const [grid, setGrid] = useState(
+    Array(6).fill(null).map(() => Array(6).fill(null))
+  );
   const [nextPieces, setNextPieces] = useState(generateNextPieces());
   const [gameOver, setGameOver] = useState(false);
+  const [meltingCells, setMeltingCells] = useState([]);
   const cellLayoutsRef = useRef([]);
 
   const handleRegisterCells = (layouts) => {
@@ -31,101 +30,119 @@ export default function App() {
 
   const checkForMatches = (gridToCheck) => {
     const newGrid = gridToCheck.map(row => [...row]);
-      for (let row = 0; row < grid.length - 1; row++) {
-        for (let col = 0; col < grid[0].length - 1; col++) {
-        const val = newGrid[row][col];
+    const toClear = [];
+
+    for (let row = 0; row < newGrid.length - 1; row++) {
+      for (let col = 0; col < newGrid[0].length - 1; col++) {
+        const topLeft = newGrid[row][col];
+        const topRight = newGrid[row][col + 1];
+        const bottomLeft = newGrid[row + 1][col];
+        const bottomRight = newGrid[row + 1][col + 1];
+
         if (
-          val &&
-          newGrid[row][col + 1] === val &&
-          newGrid[row + 1][col] === val &&
-          newGrid[row + 1][col + 1] === val
+          topLeft &&
+          topLeft === topRight &&
+          topLeft === bottomLeft &&
+          topLeft === bottomRight
         ) {
-          newGrid[row][col] = null;
-          newGrid[row][col + 1] = null;
-          newGrid[row + 1][col] = null;
-          newGrid[row + 1][col + 1] = null;
+          toClear.push(
+            { row, col },
+            { row, col: col + 1 },
+            { row: row + 1, col },
+            { row: row + 1, col: col + 1 }
+          );
         }
       }
     }
-    setGrid(newGrid);
+
+    if (toClear.length > 0) {
+      console.log('💥 Clearing cells:', toClear);
+      setMeltingCells(toClear);
+      setTimeout(() => {
+        const afterClearGrid = newGrid.map((row, r) =>
+          row.map((cell, c) => {
+            return toClear.some(pos => pos.row === r && pos.col === c) ? null : cell;
+          })
+        );
+        setGrid(afterClearGrid);
+        setMeltingCells([]);
+      }, 300);
+    }
   };
 
-    const handleDrop = (dropX, dropY, color, id) => {
-      console.log('📦 Dropped:', { dropX, dropY, color, id });
+  const handleDrop = (dropX, dropY, color, id) => {
+    console.log('📦 Dropped:', { dropX, dropY, color, id });
 
-      const droppedPiece = nextPieces.find(p => p.id === id);
-      if (!droppedPiece) return;
+    const droppedPiece = nextPieces.find(p => p.id === id);
+    if (!droppedPiece) return;
 
-      const { shape } = droppedPiece;
+    const { shape } = droppedPiece;
 
-      // Find the cell the first square landed on
-      const anchorCell = cellLayoutsRef.current.find(cell =>
-        dropX >= cell.x &&
-        dropX <= cell.x + cell.width &&
-        dropY >= cell.y &&
-        dropY <= cell.y + cell.height
+    const anchorCell = cellLayoutsRef.current.find(cell =>
+      dropX >= cell.x &&
+      dropX <= cell.x + cell.width &&
+      dropY >= cell.y &&
+      dropY <= cell.y + cell.height
+    );
+
+    if (!anchorCell) {
+      console.log('❌ No anchor cell found');
+      return;
+    }
+
+    const baseRow = anchorCell.row;
+    const baseCol = anchorCell.col;
+
+    const canPlace = shape.every(({ x, y }) => {
+      const r = baseRow + y;
+      const c = baseCol + x;
+      return (
+        r >= 0 &&
+        r < grid.length &&
+        c >= 0 &&
+        c < grid[0].length &&
+        !grid[r][c]
       );
+    });
 
-      if (!anchorCell) {
-        console.log('❌ No anchor cell found');
-        return;
-      }
+    if (!canPlace) {
+      console.log('🚫 Cannot place shape: space occupied or out of bounds');
+      return;
+    }
 
-      const baseRow = anchorCell.row;
-      const baseCol = anchorCell.col;
-
-      // Check if all shape cells fit
-      const canPlace = shape.every(({ x, y }) => {
-        const r = baseRow + y;
-        const c = baseCol + x;
-        return (
-          r >= 0 &&
-          r < grid.length &&
-          c >= 0 &&
-          c < grid[0].length &&
-          !grid[r][c]
-        );
-      });
-
-      if (!canPlace) {
-        console.log('🚫 Cannot place shape: space occupied or out of bounds');
-        return;
-      }
-
-      // Place the shape
-      const newGrid = grid.map(row => [...row]);
-      shape.forEach(({ x, y }) => {
-        const r = baseRow + y;
-        const c = baseCol + x;
-        newGrid[r][c] = color;
-      });
+    const newGrid = grid.map(row => [...row]);
+    shape.forEach(({ x, y }) => {
+      const r = baseRow + y;
+      const c = baseCol + x;
+      newGrid[r][c] = color;
+    });
       setGrid(newGrid);
 
-      // Remove used piece
       const updatedPieces = nextPieces.filter(p => p.id !== id);
       setNextPieces(updatedPieces);
 
-      // Refresh if none left
       if (updatedPieces.length === 0) {
         setNextPieces(generateNextPieces());
       }
 
-      checkForMatches(newGrid);
+      // Delay logic so grid has time to visually update
+      setTimeout(() => {
+        checkForMatches(newGrid);
+        if (isGridFull(newGrid)) {
+          setGameOver(true);
+        }
+      }, 100);
+  };
 
-      if (isGridFull(newGrid)) {
-        setGameOver(true);
-      }
-    };
-
-    if (!Array.isArray(grid) || grid.length === 0 || !Array.isArray(grid[0])) {
-      console.warn('⛔️ Skipping render: Grid not initialized');
-      return null;
-    }
+  if (!Array.isArray(grid) || grid.length === 0 || !Array.isArray(grid[0])) {
+    console.warn('⛔️ Skipping render: Grid not initialized');
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <GameGrid grid={grid} onRegisterCells={handleRegisterCells} />
+        <GameGrid grid={grid} onRegisterCells={handleRegisterCells} meltingCells={meltingCells} />
         <NextPieces pieces={nextPieces} onDrop={handleDrop} />
         {gameOver && (
           <Text style={{ color: 'white', fontSize: 24, marginTop: 20 }}>

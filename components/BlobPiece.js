@@ -1,5 +1,6 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const colorMap = {
@@ -10,20 +11,36 @@ const colorMap = {
   purple: ['#c3a6ff', '#8755d3'],
 };
 
-export default function BlobPiece({ color = 'blue', variant = 'grid' }) {
+export default function BlobPiece({ color = 'blue', variant = 'grid', melting = false }) {
   const gradientColors = colorMap[color] || colorMap.blue;
-  const styleVariant = variant === 'floating' ? styles.floating : styles.gridBlob;
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (melting) {
+      scale.value = withTiming(1.5, { duration: 250 });
+      opacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [melting]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const styleVariant = variant === 'floating' ? styles.floating : styles.fixedGrid;
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0.1, y: 0.1 }}
-      end={{ x: 0.9, y: 0.9 }}
-      style={[styles.baseBlob, styleVariant]}
-    />
+    <Animated.View style={[styles.baseBlob, styleVariant, animatedStyle]}>
+      <LinearGradient
+        colors={gradientColors}
+        start={{ x: 0.1, y: 0.1 }}
+        end={{ x: 0.9, y: 0.9 }}
+        style={StyleSheet.absoluteFill}
+      />
+    </Animated.View>
   );
 }
-
 
 const styles = StyleSheet.create({
   baseBlob: {
@@ -32,14 +49,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    overflow: 'hidden',
   },
-  gridBlob: {
-    flex: 1,
-    borderRadius: 12, // soft corner stretch
+  fixedGrid: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
   },
   floating: {
     width: 50,
     height: 50,
-    borderRadius: 999, // full circle
+    borderRadius: 999,
   },
 });
